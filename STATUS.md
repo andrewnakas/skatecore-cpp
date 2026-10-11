@@ -12,8 +12,15 @@ Live: https://andrewnakas.github.io/skatecore-cpp/ (currently the "lite" engine)
   kickflip (t182/238), carve. CSV: input, phys/motion/action states, clip, 7 board bodies (pos, quat, vel, angvel),
   rider root, contacts, trick/score names, events. Unpacked pack root: ~/Documents/haloskate-ref/cleanpack/root.
 
+- **Stage C done.** skate-core math + all of physics/ in C++ (`src/s3/core`), 209 ported Rust tests pass
+  (incl. bit-exact hex vectors), plus partial ports of riding/air/player/animation pieces physics needs.
+- **Stage D done.** skate-data loaders (`src/s3/data`): VFS over core.pack, VLT collections, physics skeleton, ABIN +
+  VBR, metadata, frames, state graphs, .pat, input config, manifest, .skate maps (zlib/zstd). 59 tests; dumps of all
+  3324 clips, poses, KenneyPark/MegaPark/StartPark/BlackBoxPark identical to Rust.
+
 ## In progress
-- Stage D (data loaders), Stage C (core math + physics).
+- Stage A (animation + state graphs), Stage P1 (input/riding/air/scoring), Stage P2 (player/**).
+- Next: Stage P3 (skate-game physics/* frame advance), Stage K (camera), trace harness, Stage W (web demo).
 
 ## Trace parity
 (none yet)
