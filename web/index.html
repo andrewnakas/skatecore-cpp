@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>skatecore</title>
+<meta name="description" content="Skate 3 mechanics in C++ (a port of skate-core), running in your browser: flick-it tricks, grinds, manuals.">
+<link rel="stylesheet" href="style.css">
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js" } }
+</script>
+</head>
+<body>
+<div id="stage"></div>
+<div id="loading">loading skatecore…</div>
+
+<header class="title">
+  <h1>skatecore</h1>
+  <p>Skate 3 mechanics in C++ · WebAssembly</p>
+</header>
+
+<div class="score"><span>SCORE</span><b id="score">0</b><i id="state"></i></div>
+<div id="trick" class="trick"></div>
+<div id="combo" class="combo"></div>
+<div id="line" class="line"></div>
+<div id="speed" class="speed"></div>
+
+<aside id="help" class="help">
+  <h2>Controls</h2>
+  <table>
+    <tr><td>W / Space</td><td>push</td></tr>
+    <tr><td>S</td><td>brake</td></tr>
+    <tr><td>A D</td><td>carve · spin in the air</td></tr>
+    <tr><td>↓ then ↑</td><td>ollie (↑ then ↓ nollie)</td></tr>
+    <tr><td>↓ then ↖ / ↗</td><td>kickflip / heelflip</td></tr>
+    <tr><td>↓ then sweep ← / →</td><td>pop shove-it / FS shove-it</td></tr>
+    <tr><td>← then → </td><td>hardflip (→ then ← inward heel)</td></tr>
+    <tr><td>↙ then ↗</td><td>varial kickflip</td></tr>
+    <tr><td>← ↙ ↓ ↗ scoop</td><td>360 flip</td></tr>
+    <tr><td>Shift / C</td><td>manual / nose manual (W S balance)</td></tr>
+    <tr><td>Q / E</td><td>grabs</td></tr>
+    <tr><td>X + carve</td><td>powerslide</td></tr>
+    <tr><td>R</td><td>reset · H hides this</td></tr>
+  </table>
+  <p>Land on the glowing edges to grind. Gamepad: left stick ride, right stick flick, A push, triggers grab, bumpers manual.
+    Touch: left half rides, right half flicks.</p>
+  <p class="src"><a href="https://github.com/andrewnakas/skatecore-cpp">source</a></p>
+</aside>
+
+<script type="module" src="main.js"></script>
+</body>
+</html>

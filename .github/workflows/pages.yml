@@ -1,0 +1,58 @@
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+env:
+  EMSDK_VERSION: 6.0.10
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: make test
+
+  web:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: ~/emsdk
+          key: emsdk-${{ env.EMSDK_VERSION }}
+      - name: Install Emscripten
+        run: |
+          if [ ! -x ~/emsdk/upstream/emscripten/em++ ]; then
+            git clone --depth 1 https://github.com/emscripten-core/emsdk.git ~/emsdk
+            ~/emsdk/emsdk install "$EMSDK_VERSION"
+          fi
+          ~/emsdk/emsdk activate "$EMSDK_VERSION"
+      - name: Build
+        run: |
+          source ~/emsdk/emsdk_env.sh
+          tools/build_web.sh site
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: [test, web]
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
