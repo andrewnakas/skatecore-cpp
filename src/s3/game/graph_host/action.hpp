@@ -22,7 +22,7 @@
 #include "s3/data/collections.hpp"
 #include "s3/game/graph_host/action/board_adjust.hpp"
 #include "s3/game/graph_host/action_nodes.hpp"
-#include "s3/game/graph_host/compat/input_gesture_mapping.hpp"
+#include "s3/game/input/gesture_mapping.hpp"
 #include "s3/game/graph_host/motion_gameplay_conditions.hpp"
 #include "s3/game/graph_host/outputs.hpp"
 #include "s3/game/graph_runtime.hpp"

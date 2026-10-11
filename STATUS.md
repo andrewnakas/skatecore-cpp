@@ -32,12 +32,17 @@ Live: https://andrewnakas.github.io/skatecore-cpp/ (currently the "lite" engine)
   grind_world*, skate_world*, web/s3/, tools/s3trace.cpp, mk/game.mk ...). Resume: re-launch P3 (prompt in
   docs/PORT_PLAN.md stages P/W), have it inventory what exists, finish, then run the trace parity.
 
+- **Stage P3 done (uncommitted).** skate-game simulation in C++ (src/s3/game: physics/**, input/**, grind_world/**,
+  scoring_runtime, skate_world, driver) + `s3trace` + tools/trace_diff.py + tools/parity.sh; 193 ported game tests
+  (`make s3-game-test`), 6 stale Rust #[ignore] playback tests skipped unless S3_RUN_STALE=1 (docs/PARITY.md).
+
 ## In progress (when resumed)
-- Stage P3: skate-game simulation (GamePhysics, frame::advance, grinds, wipeouts, input) + `s3trace` parity vs simref.
 - Stage W1: web demo loading the cleanroom pack + map + skater.glb (under /s3/).
 
 ## Trace parity
-(none yet)
+Stage P3: C++ `build/s3trace` vs simref `trace` is **bit-identical** (decimal and `--hex` CSV, every tick, every column) on
+idle/push/ollie/kickflip/carve (KenneyPark), test-world, normal/hardcore difficulty and 22 extra 2400-tick stress traces
+(`tools/parity.sh --extra`; covers air, grabs, flips, spins, off-board, bails, grinds, powerslide, respawn). See docs/PARITY.md.
 
 ## Questions
 (none)

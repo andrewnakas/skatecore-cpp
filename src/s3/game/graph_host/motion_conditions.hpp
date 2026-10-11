@@ -18,7 +18,7 @@
 #include "s3/core/graph/controller.hpp"
 #include "s3/core/rs.hpp"
 #include "s3/data/state_graph.hpp"
-#include "s3/game/graph_host/compat/input_gesture_catalog.hpp"
+#include "s3/game/input/gesture_catalog.hpp"
 #include "s3/game/graph_host/condition_nodes.hpp"
 #include "s3/game/graph_host/motion_dismount.hpp"
 #include "s3/game/graph_host/motion_gameplay_conditions.hpp"

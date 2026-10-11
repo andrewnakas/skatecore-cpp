@@ -15,7 +15,7 @@
 #include "s3/data/result.hpp"
 #include "s3/data/state_graph.hpp"
 #include "s3/game/graph_host/action_conditions.hpp"
-#include "s3/game/graph_host/compat/input_gesture_catalog.hpp"
+#include "s3/game/input/gesture_catalog.hpp"
 
 namespace s3::game::graph_host::action_nodes {
 
