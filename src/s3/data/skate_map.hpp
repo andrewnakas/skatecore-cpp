@@ -160,8 +160,8 @@ struct SkateMap
 Status validate_static_objects(const SkateMap &map, const Extension &extension);
 
 namespace skate_map_storage {
-/// Borrowed compressed payload (`StoredBlock`): method 0 raw, 1 zlib, 2 zstd (not
-/// supported by this port: returns an error), 3..10 SKATE15 transforms.
+/// Borrowed compressed payload (`StoredBlock`): method 0 raw, 1 zlib, 2 zstd,
+/// 3..10 SKATE15 transforms.
 struct StoredBlock
 {
 	size_t expected = 0;

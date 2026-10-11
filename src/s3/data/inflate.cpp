@@ -18,10 +18,6 @@ struct Huffman
 	uint16_t fast[1 << FASTBITS];
 };
 
-struct Stop
-{
-};
-
 struct State
 {
 	const uint8_t *in;
@@ -29,10 +25,10 @@ struct State
 	size_t pos = 0;
 	uint64_t bitbuf = 0;
 	int bitcnt = 0;
+	// Output: `out` is the buffer (its size is the capacity), `len` the bytes produced.
 	std::vector<uint8_t> &out;
+	size_t len = 0;
 	size_t limit;
-	bool hit_limit = false;
-	std::string error;
 
 	State(const uint8_t *d, size_t n, std::vector<uint8_t> &o, size_t l) : in(d), size(n), out(o), limit(l) {}
 
@@ -44,6 +40,14 @@ struct State
 			bitcnt += 8;
 		}
 		return true;
+	}
+	// Prefetch whole bytes (align() gives unused ones back).
+	void refill()
+	{
+		while (bitcnt <= 56 && pos < size) {
+			bitbuf |= (uint64_t)in[pos++] << bitcnt;
+			bitcnt += 8;
+		}
 	}
 	// Drop the partial byte; give back whole prefetched bytes.
 	void align()
@@ -60,9 +64,22 @@ struct State
 		bitcnt -= n;
 		return true;
 	}
+	// Room for `n` more bytes (bounded by the limit); returns how many fit.
+	size_t reserve(size_t n)
+	{
+		size_t room = limit - len;
+		if (n > room) n = room;
+		if (len + n > out.size()) {
+			size_t grow = out.size() * 2 + (64u << 10);
+			size_t want = len + n > grow ? len + n : grow;
+			if (want > limit) want = limit;
+			out.resize(want);
+		}
+		return n;
+	}
 };
 
-// Returns 0 on success, <0 for incomplete/over-subscribed sets that are invalid.
+// Returns 0 when complete, >0 for an incomplete set, <0 for an over-subscribed set.
 int construct(Huffman &h, const uint16_t *length, int n)
 {
 	std::memset(h.count, 0, sizeof h.count);
@@ -80,7 +97,7 @@ int construct(Huffman &h, const uint16_t *length, int n)
 	for (int len = 1; len < MAXBITS; len++) offs[len + 1] = (uint16_t)(offs[len] + h.count[len]);
 	for (int s = 0; s < n; s++)
 		if (length[s] != 0) h.symbol[offs[length[s]]++] = (uint16_t)s;
-	// Fast table: canonical codes assigned in (length, symbol) order.
+	// Fast table: canonical codes assigned in (length, symbol) order, stored bit-reversed.
 	int code = 0, index = 0;
 	for (int len = 1; len <= MAXBITS; len++) {
 		for (int k = 0; k < h.count[len]; k++, index++, code++) {
@@ -95,20 +112,17 @@ int construct(Huffman &h, const uint16_t *length, int n)
 }
 
 // Decode one symbol; -1 on out of input, -2 on invalid code.
-int decode(State &s, const Huffman &h)
+inline int decode(State &s, const Huffman &h)
 {
-	s.need(FASTBITS); // may be short near the end; fall back below
-	if (s.bitcnt >= FASTBITS || s.bitcnt > 0) {
-		uint32_t peek = (uint32_t)(s.bitbuf & ((1u << FASTBITS) - 1));
-		uint16_t e = h.fast[peek];
-		if (e && (e & 15) <= s.bitcnt) {
-			int len = e & 15;
-			s.bitbuf >>= len;
-			s.bitcnt -= len;
-			return e >> 4;
-		}
+	if (s.bitcnt < MAXBITS) s.refill(); // may stay short near the end; fall back below
+	uint16_t e = h.fast[s.bitbuf & ((1u << FASTBITS) - 1)];
+	if (e && (e & 15) <= s.bitcnt) {
+		int len = e & 15;
+		s.bitbuf >>= len;
+		s.bitcnt -= len;
+		return e >> 4;
 	}
-	// Slow canonical decode, bit by bit.
+	// Slow canonical decode, bit by bit (codes longer than FASTBITS, or the stream end).
 	int code = 0, first = 0, index = 0;
 	for (int len = 1; len <= MAXBITS; len++) {
 		uint32_t bit;
@@ -137,8 +151,8 @@ int codes(State &s, const Huffman &lencode, const Huffman &distcode)
 		int symbol = decode(s, lencode);
 		if (symbol < 0) return symbol == -1 ? -10 : -11;
 		if (symbol < 256) {
-			if (s.out.size() >= s.limit) return 1;
-			s.out.push_back((uint8_t)symbol);
+			if (s.reserve(1) == 0) return 1;
+			s.out[s.len++] = (uint8_t)symbol;
 		} else if (symbol == 256) {
 			return 0;
 		} else {
@@ -152,11 +166,12 @@ int codes(State &s, const Huffman &lencode, const Huffman &distcode)
 			if (dsym >= 30) return -12;
 			if (!s.bits(DEXT[dsym], extra)) return -10;
 			size_t dist = DBASE[dsym] + extra;
-			if (dist > s.out.size()) return -13;
-			for (size_t k = 0; k < len; k++) {
-				if (s.out.size() >= s.limit) return 1;
-				s.out.push_back(s.out[s.out.size() - dist]);
-			}
+			if (dist > s.len) return -13;
+			size_t n = s.reserve(len);
+			uint8_t *o = s.out.data() + s.len;
+			for (size_t k = 0; k < n; k++) o[k] = o[k - dist]; // overlapping copy in byte order
+			s.len += n;
+			if (n < len) return 1;
 		}
 	}
 }
@@ -239,11 +254,12 @@ int stored_block(State &s)
 	uint32_t nlen = s.in[s.pos + 2] | (uint32_t)s.in[s.pos + 3] << 8;
 	s.pos += 4;
 	if (len != (~nlen & 0xffff)) return -2;
-	for (uint32_t k = 0; k < len; k++) {
-		if (s.out.size() >= s.limit) return 1;
-		if (s.pos >= s.size) return -10;
-		s.out.push_back(s.in[s.pos++]);
-	}
+	size_t avail = s.size - s.pos;
+	size_t n = s.reserve(len < avail ? len : avail);
+	if (n) std::memcpy(s.out.data() + s.len, s.in + s.pos, n);
+	s.len += n;
+	s.pos += n;
+	if (n < len) return n < avail ? 1 : -10;
 	return 0;
 }
 
@@ -261,42 +277,38 @@ Output zlib_decompress(const uint8_t *data, size_t size, size_t limit)
 		result.error = "corrupt deflate stream";
 		return result;
 	}
+	// Start with min(limit, 8 MiB) like the Rust reader's reservation; grow on demand.
+	result.bytes.resize(limit < ((size_t)8 << 20) ? limit : ((size_t)8 << 20));
 	State s(data, size, result.bytes, limit);
 	s.pos = 2;
+	auto finish = [&](const char *error) {
+		result.bytes.resize(s.len);
+		if (error) result.error = error;
+		result.total_in = s.pos;
+		return result;
+	};
 	int last;
 	do {
 		uint32_t v, type;
-		if (!s.bits(1, v) || !s.bits(2, type)) {
-			result.error = "corrupt deflate stream";
-			result.total_in = s.pos;
-			return result;
-		}
+		if (!s.bits(1, v) || !s.bits(2, type)) return finish("corrupt deflate stream");
 		last = (int)v;
 		int err = type == 0 ? stored_block(s) : type == 1 ? fixed_block(s) : type == 2 ? dynamic_block(s) : -1;
 		if (err == 1) {
-			result.total_in = s.pos;
-			return result; // output limit reached
+			s.align();
+			return finish(nullptr); // output limit reached
 		}
-		if (err != 0) {
-			result.error = "corrupt deflate stream";
-			result.total_in = s.pos;
-			return result;
-		}
+		if (err != 0) return finish("corrupt deflate stream");
 	} while (!last);
 	// Byte-align and read the big-endian Adler-32 trailer.
 	s.align();
-	if (s.pos + 4 > size) {
-		result.error = "corrupt deflate stream";
-		result.total_in = s.pos;
-		return result;
-	}
+	if (s.pos + 4 > size) return finish("corrupt deflate stream");
 	uint32_t expected = (uint32_t)data[s.pos] << 24 | (uint32_t)data[s.pos + 1] << 16 | (uint32_t)data[s.pos + 2] << 8 | data[s.pos + 3];
 	s.pos += 4;
 	uint32_t a = 1, b = 0;
-	const std::vector<uint8_t> &o = result.bytes;
+	const uint8_t *o = result.bytes.data();
 	size_t i = 0;
-	while (i < o.size()) {
-		size_t chunk = o.size() - i < 5552 ? o.size() - i : 5552;
+	while (i < s.len) {
+		size_t chunk = s.len - i < 5552 ? s.len - i : 5552;
 		for (size_t k = 0; k < chunk; k++) {
 			a += o[i + k];
 			b += a;
@@ -305,14 +317,9 @@ Output zlib_decompress(const uint8_t *data, size_t size, size_t limit)
 		b %= 65521;
 		i += chunk;
 	}
-	if ((b << 16 | a) != expected) {
-		result.error = "corrupt deflate stream";
-		result.total_in = s.pos;
-		return result;
-	}
-	result.total_in = s.pos;
+	if ((b << 16 | a) != expected) return finish("corrupt deflate stream");
 	result.complete = true;
-	return result;
+	return finish(nullptr);
 }
 
 } // namespace s3::data::inflate

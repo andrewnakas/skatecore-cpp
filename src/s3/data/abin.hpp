@@ -161,7 +161,7 @@ class Reader
 {
 public:
 	Reader() = default;
-	explicit Reader(const uint8_t *bytes, size_t size) : bytes_(bytes), size_(size), begin_(0), end_(size) {}
+	explicit Reader(const uint8_t *bytes, size_t size) : bytes_(bytes), begin_(0), end_(size) {}
 	Result<Reader> bounded(Range range) const;
 	Result<const uint8_t *> take(size_t offset, size_t size) const;
 	Result<uint8_t> u8(size_t offset) const;
@@ -184,7 +184,6 @@ public:
 
 private:
 	const uint8_t *bytes_ = nullptr;
-	size_t size_ = 0;
 	size_t begin_ = 0;
 	size_t end_ = 0;
 };
