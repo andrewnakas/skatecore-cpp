@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>skatecore s3</title>
+<meta name="description" content="The full Skate 3 runtime port (C++ / WebAssembly) on the cleanroom data: maps and the skater.">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="style.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="stage"></div>
+
+<div id="loading">
+  <div class="box">
+    <h1>skatecore <span>s3</span></h1>
+    <p id="status">starting…</p>
+    <div class="bar"><div id="progress"></div></div>
+    <p id="bytes" class="small"></p>
+  </div>
+</div>
+
+<header class="title">
+  <h1>skatecore <span>s3</span></h1>
+  <p id="info">full runtime port · stage W1 (map + skater, no simulation yet)</p>
+</header>
+
+<nav id="maps" class="maps"></nav>
+
+<script type="module" src="main.js"></script>
+</body>
+</html>
