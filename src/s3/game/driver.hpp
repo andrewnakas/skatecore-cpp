@@ -66,6 +66,39 @@ struct TickRecord {
     std::vector<std::string> events;
 };
 
+/// Render-side view of the completed tick (web host; not part of the trace contract).
+/// Mirrors what presentation.rs `capture` snapshots plus the audio observation inputs.
+struct Presentation {
+    /// skater.animated_skeleton.roots.animation_to_world (native column-major 4x4).
+    std::array<std::array<float, 4>, 4> root{};
+    /// skater.render_pose: global bone matrices in animation space.
+    const std::vector<std::array<std::array<float, 4>, 4>>* bones = nullptr;
+    std::uint64_t pose_generation = 0;
+    bool has_camera = false;
+    std::array<float, 3> camera_position{};
+    /// CameraFrame basis columns: right, up, at.
+    std::array<std::array<float, 3>, 3> camera_basis{};
+    float field_of_view_degrees = 0.0f;
+    bool camera_discontinuity = false;
+    /// processed.flags_2472 bit 10 (teleport): presentation snaps instead of blending.
+    bool teleport = false;
+    /// physics.clock.period() in seconds (the fixed-update cadence).
+    double period_seconds = 0.0;
+    // Audio observation (physics/audio_observation.rs publish).
+    std::uint32_t wheel_surface = 0;
+    std::uint32_t grind_audio_surface = 0;
+    bool powersliding = false;
+    float board_speed = 0.0f;
+    float footstep_strength = 0.0f;
+    float foot_push_speed = 0.0f;
+    std::string trick_identifier;
+    // Scoring (HUD).
+    float sequence_score = 0.0f;
+    float multiplier = 1.0f;
+    float line_score = 0.0f;
+    float total_score = 0.0f;
+};
+
 std::string decode_name(const sc::animation::output::attributes::AttributeName& name);
 
 class Sim {
@@ -78,6 +111,10 @@ public:
     float time_step() const;
     /// One host frame / one fixed tick. Returns the post-tick observation.
     rs::Result<TickRecord, std::string> step(Pad pad);
+    /// Window aspect ratio camera::present applies after each tick (default WINDOW_ASPECT, as simref).
+    void set_aspect_ratio(float aspect);
+    /// Render/audio view of the last completed tick.
+    Presentation presentation() const;
 
 private:
     Sim();

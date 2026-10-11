@@ -1,6 +1,8 @@
 // Port of simref crates/sim/src/driver.rs.
 #include "s3/game/driver.hpp"
 
+#include <cmath>
+
 #include "s3/core/physics/board.hpp"
 #include "s3/core/physics/phase.hpp"
 #include "s3/data/gesture_patterns.hpp"
@@ -14,6 +16,7 @@
 #include "s3/game/physics.hpp"
 #include "s3/game/physics/controls.hpp"
 #include "s3/game/physics/frame.hpp"
+#include "s3/game/physics/ground_runtime.hpp"
 #include "s3/game/physics/skater.hpp"
 #include "s3/game/skate_world.hpp"
 #include "s3/game/state_names.hpp"
@@ -45,6 +48,7 @@ struct Sim::State {
     std::string prev_score_name;
     bool prev_wiping = false;
     std::uint32_t prev_state_id = 0;
+    float aspect = WINDOW_ASPECT;
 };
 
 Sim::Sim() : s_(std::make_unique<State>()) {}
@@ -192,7 +196,7 @@ rs::Result<TickRecord, std::string> Sim::step(Pad pad) {
     }
 
     // ---- Update: camera::present sets the window aspect ratio.
-    s.camera->set_aspect_ratio(WINDOW_ASPECT);
+    s.camera->set_aspect_ratio(s.aspect);
 
     return observe(tick);
 }
@@ -287,6 +291,48 @@ TickRecord Sim::observe(std::uint64_t tick) {
     s.prev_score_name = score_name;
     s.prev_wiping = wiping;
     return record;
+}
+
+void Sim::set_aspect_ratio(float aspect) {
+    if (aspect > 0.0f && std::isfinite(aspect)) s_->aspect = aspect;
+}
+
+Presentation Sim::presentation() const {
+    const State& s = *s_;
+    const GamePhysics& physics = *s.physics;
+    const SkaterRuntime& skater = *s.skater;
+    Presentation p{};
+    p.root = skater.animated_skeleton.roots.animation_to_world;
+    p.bones = &skater.render_pose;
+    p.pose_generation = skater.pose_generation;
+    if (s.camera->frame.has_value()) {
+        const auto& f = *s.camera->frame;
+        p.has_camera = true;
+        p.camera_position = {f.position[0], f.position[1], f.position[2]};
+        p.camera_basis = f.basis.columns;
+        p.field_of_view_degrees = f.field_of_view_degrees;
+        p.camera_discontinuity = f.discontinuity;
+    }
+    p.teleport = (skater.player_input.processed.flags_2472 & (1u << 10)) != 0;
+    const auto period = physics.clock.period();
+    p.period_seconds = double(period.secs) + double(period.nanos) * 1e-9;
+    p.wheel_surface = physics::ground_runtime::active_audio_surface(physics.riding);
+    p.grind_audio_surface = skater.player_input.physical.grinds.audio_surface_216;
+    p.powersliding = skater.animation.motion.is_power_sliding;
+    if (const auto* out = physics.simref_output()) {
+        const auto v = out->board_linear_velocity;
+        p.board_speed = std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+        p.footstep_strength = out->footstep_strength;
+        p.foot_push_speed = out->foot_push_speed;
+    }
+    if (const auto trick = skater.animation.motion.score_packet.trick_names.first) {
+        if (const auto* d = skater.scoring.data.by_name(trick->_0)) p.trick_identifier = d->identifier;
+    }
+    p.sequence_score = skater.scoring.sequence_score;
+    p.multiplier = skater.scoring.session.combo.multiplier;
+    p.line_score = skater.scoring.session.holder.snapshot.line;
+    p.total_score = skater.scoring.session.holder.snapshot.completed_lines;
+    return p;
 }
 
 }  // namespace s3::game::driver

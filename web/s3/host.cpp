@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
+#include <exception>
 #include <memory>
 #include <string>
 #include <vector>
@@ -14,6 +15,7 @@
 #include "s3/data/animation_banks.hpp"
 #include "s3/data/skate_map.hpp"
 #include "s3/data/vfs.hpp"
+#include "s3/game/driver.hpp"
 
 using namespace s3::data;
 
@@ -41,6 +43,17 @@ std::unique_ptr<MapView> view;
 // Rig hierarchy of the stock animation banks (OnBoard), for binding skins by name.
 std::vector<std::string> rig_names;
 std::vector<int32_t> rig_parents;
+
+// The simulation (stage W2): s3::game::driver::Sim over the VFS + the loaded map.
+std::unique_ptr<s3::game::driver::Sim> sim;
+s3::game::driver::TickRecord record;
+std::string events_joined;
+std::string trick_identifier;
+// View of the last tick, see s3_sim_view for the layout.
+constexpr int VIEW_FLOATS = 64;
+float view_buf[VIEW_FLOATS];
+std::vector<float> bone_buf; // 16 floats per bone (column-major)
+float board_buf[7 * 13];     // per body: position 3, orientation 4 (xyzw), linear velocity 3, angular velocity 3
 
 SharedBytes file_bytes; // last s3_read_file result (keeps the owner alive)
 
@@ -115,6 +128,7 @@ EMSCRIPTEN_KEEPALIVE const uint8_t *s3_read_file(const char *path, uint32_t *siz
 // Parse `path` from the VFS. Returns 1 on success.
 EMSCRIPTEN_KEEPALIVE int s3_map_load(const char *path)
 {
+	sim.reset(); // the simulation refers to the map
 	view.reset();
 	auto r = SkateMap::load(vfs, path);
 	if (!r.ok) return fail("map: " + r.error);
@@ -169,8 +183,11 @@ EMSCRIPTEN_KEEPALIVE int s3_map_load(const char *path)
 	Vec3f spawn = m.spawn;
 	auto g = spawn_ground::grounded_spawn(m, spawn);
 	if (g.ok && g.value) {
+		std::fprintf(stderr, "SKATE_SPAWN_MOVED from=[%g, %g, %g] to=[%g, %g, %g] (no ground below)\n", spawn[0], spawn[1],
+		             spawn[2], (*g.value)[0], (*g.value)[1], (*g.value)[2]);
 		spawn = *g.value;
 		v->spawn_moved = true;
+		v->map.spawn = spawn; // the simulation starts there too
 	}
 	v->spawn[0] = spawn[0];
 	v->spawn[1] = spawn[1];
@@ -240,5 +257,146 @@ EMSCRIPTEN_KEEPALIVE int s3_rig_load(const char *asset_root)
 }
 EMSCRIPTEN_KEEPALIVE const char *s3_rig_bone_name(int i) { return i >= 0 && i < (int)rig_names.size() ? rig_names[i].c_str() : ""; }
 EMSCRIPTEN_KEEPALIVE int s3_rig_bone_parent(int i) { return i >= 0 && i < (int)rig_parents.size() ? rig_parents[i] : -1; }
+
+// ---- the simulation (stage W2)
+
+namespace {
+void fill_view()
+{
+	const auto p = sim->presentation();
+	float *v = view_buf;
+	std::memset(v, 0, sizeof(view_buf));
+	for (int c = 0; c < 4; c++)
+		for (int r = 0; r < 4; r++) v[c * 4 + r] = p.root[c][r];
+	v[16] = p.camera_position[0];
+	v[17] = p.camera_position[1];
+	v[18] = p.camera_position[2];
+	for (int c = 0; c < 3; c++)
+		for (int r = 0; r < 3; r++) v[19 + c * 3 + r] = p.camera_basis[c][r];
+	v[28] = p.field_of_view_degrees;
+	v[29] = p.has_camera ? 1.f : 0.f;
+	v[30] = p.camera_discontinuity ? 1.f : 0.f;
+	v[31] = p.teleport ? 1.f : 0.f;
+	v[32] = (float)p.period_seconds;
+	v[33] = (float)(p.pose_generation & 0xffffff);
+	v[34] = p.board_speed;
+	v[35] = (float)p.wheel_surface;
+	v[36] = (float)p.grind_audio_surface;
+	v[37] = p.powersliding ? 1.f : 0.f;
+	v[38] = p.footstep_strength;
+	v[39] = p.foot_push_speed;
+	v[40] = record.grounded ? 1.f : 0.f;
+	v[41] = record.wiping_out ? 1.f : 0.f;
+	v[42] = record.landed ? 1.f : 0.f;
+	v[43] = (float)record.contact_count;
+	v[44] = (float)record.physical_state_id;
+	v[45] = (float)record.tick;
+	v[46] = p.sequence_score;
+	v[47] = p.multiplier;
+	v[48] = p.line_score;
+	v[49] = p.total_score;
+	v[50] = record.rider_root_position[0];
+	v[51] = record.rider_root_position[1];
+	v[52] = record.rider_root_position[2];
+	v[53] = record.rider_root_velocity[0];
+	v[54] = record.rider_root_velocity[1];
+	v[55] = record.rider_root_velocity[2];
+	const auto &bones = *p.bones;
+	bone_buf.resize(bones.size() * 16);
+	for (size_t b = 0; b < bones.size(); b++)
+		for (int c = 0; c < 4; c++)
+			for (int r = 0; r < 4; r++) bone_buf[b * 16 + c * 4 + r] = bones[b][c][r];
+	for (size_t i = 0; i < record.board.size() && i < 7; i++) {
+		const auto &b = record.board[i];
+		float *o = board_buf + i * 13;
+		std::memcpy(o, b.position.data(), 12);
+		std::memcpy(o + 3, b.orientation.data(), 16);
+		std::memcpy(o + 7, b.linear_velocity.data(), 12);
+		std::memcpy(o + 10, b.angular_velocity.data(), 12);
+	}
+	events_joined.clear();
+	for (const auto &e : record.events) {
+		events_joined += e;
+		events_joined += '\n';
+	}
+	trick_identifier = p.trick_identifier;
+}
+} // namespace
+
+// Start the simulation on the map `path` (parsed by s3_map_load if it is not the current map;
+// nullptr or "" = the test world). Uses the installed pack VFS. Returns 1 on success.
+EMSCRIPTEN_KEEPALIVE int s3_sim_load(const char *path)
+{
+	sim.reset();
+	record = {};
+	const SkateMap *map = nullptr;
+	if (path && *path) {
+		if (!view && !s3_map_load(path)) return 0;
+		map = &view->map;
+	}
+	try {
+		auto r = s3::game::driver::Sim::load(vfs, "assets", map, nullptr);
+		if (r.is_err()) return fail("sim: " + r.unwrap_err());
+		sim = std::move(r.unwrap());
+	} catch (const std::exception &e) {
+		sim.reset();
+		return fail(std::string("sim load panic: ") + e.what());
+	}
+	return 1;
+}
+
+// One fixed tick with a raw XInput sample. Returns 1 on success (0: failed, see s3_error).
+EMSCRIPTEN_KEEPALIVE int s3_sim_step(int buttons, int lx, int ly, int rx, int ry, int lt, int rt)
+{
+	if (!sim) return fail("no simulation");
+	s3::game::driver::Pad pad;
+	pad.buttons = (uint16_t)buttons;
+	pad.lx = (int16_t)std::clamp(lx, -32768, 32767);
+	pad.ly = (int16_t)std::clamp(ly, -32768, 32767);
+	pad.rx = (int16_t)std::clamp(rx, -32768, 32767);
+	pad.ry = (int16_t)std::clamp(ry, -32768, 32767);
+	pad.left_trigger = (uint8_t)std::clamp(lt, 0, 255);
+	pad.right_trigger = (uint8_t)std::clamp(rt, 0, 255);
+	try {
+		auto r = sim->step(pad);
+		if (r.is_err()) {
+			sim.reset();
+			return fail("step: " + r.unwrap_err());
+		}
+		record = std::move(r.unwrap());
+		fill_view();
+	} catch (const std::exception &e) {
+		sim.reset();
+		return fail(std::string("step panic: ") + e.what());
+	}
+	return 1;
+}
+
+// camera::present: the window aspect ratio (width / height) applied after each tick.
+EMSCRIPTEN_KEEPALIVE void s3_sim_set_aspect(float aspect)
+{
+	if (sim) sim->set_aspect_ratio(aspect);
+}
+EMSCRIPTEN_KEEPALIVE float s3_sim_time_step() { return sim ? sim->time_step() : 0.f; }
+// Layout: [0..15] root (animation_to_world, column-major), [16..18] camera position,
+// [19..27] camera basis columns right/up/at, [28] fov degrees, [29] has camera, [30] camera discontinuity,
+// [31] teleport, [32] fixed period s, [33] pose generation, [34] board speed, [35] wheel audio surface,
+// [36] grind audio surface, [37] powersliding, [38] footstep strength, [39] foot push speed, [40] grounded,
+// [41] wiping out, [42] landed, [43] contacts, [44] physical state id, [45] tick, [46] sequence score,
+// [47] multiplier, [48] line score, [49] completed lines score, [50..52] rider root position, [53..55] its velocity.
+EMSCRIPTEN_KEEPALIVE const float *s3_sim_view() { return view_buf; }
+EMSCRIPTEN_KEEPALIVE int s3_sim_bone_count() { return (int)bone_buf.size() / 16; }
+EMSCRIPTEN_KEEPALIVE const float *s3_sim_bones() { return bone_buf.data(); }
+// 7 bodies (wheel_rf, wheel_lf, wheel_rb, wheel_lb, truck_f, truck_b, deck) x 13 floats.
+EMSCRIPTEN_KEEPALIVE const float *s3_sim_board() { return board_buf; }
+EMSCRIPTEN_KEEPALIVE const char *s3_sim_state_name() { return record.physical_state.c_str(); }
+EMSCRIPTEN_KEEPALIVE const char *s3_sim_motion_state() { return record.motion_state.c_str(); }
+EMSCRIPTEN_KEEPALIVE const char *s3_sim_action_state() { return record.action_state.c_str(); }
+EMSCRIPTEN_KEEPALIVE const char *s3_sim_clip() { return record.animation_clip.c_str(); }
+EMSCRIPTEN_KEEPALIVE const char *s3_sim_trick_name() { return record.trick_name.c_str(); }
+EMSCRIPTEN_KEEPALIVE const char *s3_sim_trick_identifier() { return trick_identifier.c_str(); }
+EMSCRIPTEN_KEEPALIVE const char *s3_sim_score_name() { return record.score_name.c_str(); }
+// This tick's events, one per line (STATE:a>b, LANDING, WIPEOUT, TRICK:x, SCORE:x, AIRBORNE, LANDED:typeN, BAIL, ...).
+EMSCRIPTEN_KEEPALIVE const char *s3_sim_events() { return events_joined.c_str(); }
 
 } // extern "C"

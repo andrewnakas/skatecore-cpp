@@ -21,9 +21,28 @@ h1 span { color: var(--accent); }
 .title h1 { margin: 0; font-size: 20px; }
 .title p { margin: 2px 0 0; color: var(--fg); opacity: 0.85; font-size: 12px; }
 
-.maps { position: fixed; right: 16px; top: 12px; display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end;
-  max-width: calc(100vw - 32px); }
-.maps a { color: var(--fg); text-decoration: none; background: var(--panel); padding: 3px 8px; border-radius: 4px;
-  font-size: 12px; }
-.maps a.on { background: var(--accent); color: #111; }
+.maps { position: fixed; right: 16px; top: 12px; display: flex; align-items: center; gap: 6px; font-size: 12px;
+  background: var(--panel); padding: 4px 8px; border-radius: 4px; max-width: calc(100vw - 32px); }
+.maps select { font: inherit; color: var(--fg); background: transparent; border: 1px solid rgba(255,255,255,.25);
+  border-radius: 3px; padding: 2px 4px; max-width: 100%; }
+.maps select option { color: #111; }
 @media (max-width: 640px) { .maps { top: auto; bottom: 12px; right: 16px; left: 16px; justify-content: center; } }
+
+.hud { position: fixed; left: 50%; top: 14%; transform: translateX(-50%); text-align: center; pointer-events: none;
+  opacity: 0; transition: opacity 0.25s; text-shadow: 0 2px 6px #000c; max-width: calc(100vw - 32px); }
+.hud.on { opacity: 1; }
+#trick { font: italic 800 30px/1.1 system-ui, -apple-system, "Segoe UI", sans-serif; letter-spacing: 0.02em;
+  text-transform: uppercase; color: #fff; }
+#seq { margin-top: 4px; font: 700 22px/1.1 system-ui, sans-serif; color: var(--accent); font-variant-numeric: tabular-nums; }
+.line { position: fixed; left: 16px; bottom: 14px; font: 700 18px/1 system-ui, sans-serif; color: var(--accent);
+  text-shadow: 0 1px 4px #000c; pointer-events: none; font-variant-numeric: tabular-nums; }
+#state, #mode { opacity: 0.75; }
+.help { position: fixed; right: 16px; bottom: 14px; background: var(--panel); padding: 8px 12px; border-radius: 6px;
+  font-size: 12px; max-width: calc(100vw - 32px); }
+.help.hidden { display: none; }
+.help table { border-collapse: collapse; margin-top: 4px; }
+.help td { padding: 1px 8px 1px 0; vertical-align: top; }
+.help td:first-child { color: var(--accent); white-space: nowrap; }
+.help p { margin: 6px 0 0; }
+.help a { color: var(--fg); }
+@media (max-width: 640px) { .help { display: none; } #trick { font-size: 22px; } }

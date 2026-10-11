@@ -39,10 +39,19 @@ jobs:
             ~/emsdk/emsdk install "$EMSDK_VERSION"
           fi
           ~/emsdk/emsdk activate "$EMSDK_VERSION"
+      # The full runtime is ~690 translation units: ccache (content-addressed) keeps rebuilds incremental.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: ccache-em-${{ env.EMSDK_VERSION }}-${{ github.sha }}
+          restore-keys: ccache-em-${{ env.EMSDK_VERSION }}-
       - name: Build
         run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ccache >/dev/null
           source ~/emsdk/emsdk_env.sh
+          export EM_COMPILER_WRAPPER=ccache CCACHE_DIR=~/.cache/ccache CCACHE_MAXSIZE=500M
           tools/build_web.sh site
+          ccache -s || true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

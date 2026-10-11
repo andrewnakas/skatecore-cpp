@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>skatecore s3</title>
-<meta name="description" content="The full Skate 3 runtime port (C++ / WebAssembly) on the cleanroom data: maps and the skater.">
+<title>skatecore</title>
+<meta name="description" content="The full Skate 3 runtime port in C++ / WebAssembly, skating on the cleanroom data.">
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="style.css">
 <script type="importmap">
@@ -19,7 +19,7 @@
 
 <div id="loading">
   <div class="box">
-    <h1>skatecore <span>s3</span></h1>
+    <h1>skatecore</h1>
     <p id="status">starting…</p>
     <div class="bar"><div id="progress"></div></div>
     <p id="bytes" class="small"></p>
@@ -27,11 +27,33 @@
 </div>
 
 <header class="title">
-  <h1>skatecore <span>s3</span></h1>
-  <p id="info">full runtime port · stage W1 (map + skater, no simulation yet)</p>
+  <h1>skatecore</h1>
+  <p id="info">the C++ Skate 3 runtime in WebAssembly</p>
+  <p id="state" class="small"></p>
+  <p id="mode" class="small"></p>
 </header>
 
-<nav id="maps" class="maps"></nav>
+<label class="maps">Map <select id="maps" aria-label="Map"></select></label>
+
+<div id="hud" class="hud">
+  <div id="trick"></div>
+  <div id="seq"></div>
+</div>
+<div id="line" class="line"></div>
+
+<aside id="help" class="help">
+  <b>Controls</b> <span class="small">(H hides)</span>
+  <table>
+    <tr><td>Space</td><td>A: push (tap again to push harder)</td></tr>
+    <tr><td>W A S D</td><td>left stick: steer, lean, crouch</td></tr>
+    <tr><td>Arrows</td><td>right stick: flicks (down then up = ollie)</td></tr>
+    <tr><td>E / Shift / F</td><td>B / X / Y</td></tr>
+    <tr><td>Z / C · Q / R</td><td>triggers (grabs) · bumpers</td></tr>
+    <tr><td>Enter · Backspace</td><td>Start · Back</td></tr>
+    <tr><td>O</td><td>debug orbit camera</td></tr>
+  </table>
+  <p class="small">A gamepad works too (press a button first). <a href="lite/">lite demo</a></p>
+</aside>
 
 <script type="module" src="main.js"></script>
 </body>
