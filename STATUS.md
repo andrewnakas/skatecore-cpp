@@ -26,7 +26,7 @@ Live: https://andrewnakas.github.io/skatecore-cpp/ (currently the "lite" engine)
   MotionGraph (2088 states) compile and run on real data: 171 tests. Bit-exact glam (NEON order) port.
 - Ported tests total: 209 core + 59 data + 94 p1 + 265 p2 + 171 anim + 10 cam = 808, all passing.
 
-## Paused (2026-10-11 ~13:30): weekly usage limit hit, resets Oct 16 1am MT
+## Resumed after a usage-limit pause (2026-10-11)
 - Stage P3 (skate-game simulation + s3trace) and Stage W1 (web demo on the real pack) were mid-port when every agent
   stopped. Their partial files are in the working tree, UNCOMMITTED on purpose (src/s3/game/physics*, input*,
   grind_world*, skate_world*, web/s3/, tools/s3trace.cpp, mk/game.mk ...). Resume: re-launch P3 (prompt in
