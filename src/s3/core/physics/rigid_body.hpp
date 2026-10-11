@@ -206,9 +206,5 @@ Vector3 multiply_packed_world_inverse_inertia(RetailPackedWorldInverseInertia te
 
 }  // namespace s3::physics::rigid_body
 
+// Re-exports (`pub use dynamic_update::{...}`) live in the child header.
 #include "s3/core/physics/rigid_body/dynamic_update.hpp"
-
-namespace s3::physics::rigid_body {
-using dynamic_update::dynamic_update_packed;
-using dynamic_update::DynamicUpdateResult;
-}  // namespace s3::physics::rigid_body

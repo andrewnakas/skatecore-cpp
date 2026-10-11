@@ -33,3 +33,8 @@ std::array<V, 3> quaternion_basis(V q);
 std::pair<V, V> inverse_inertia(std::array<V, 3> basis, std::array<std::uint32_t, 3> tensor);
 
 }  // namespace s3::physics::rigid_body::dynamic_update
+
+namespace s3::physics::rigid_body {
+using dynamic_update::dynamic_update_packed;
+using dynamic_update::DynamicUpdateResult;
+}  // namespace s3::physics::rigid_body

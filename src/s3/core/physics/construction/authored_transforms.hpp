@@ -46,3 +46,10 @@ std::array<RetailAffineTransform, 7> authored_body_transforms(AuthoredTransformI
 std::array<std::array<std::uint32_t, 16>, 7> authored_body_pose_records(AuthoredTransformInputs input);
 
 }  // namespace s3::physics::drive_frames::authored
+
+// `pub use authored::{...}` re-exports (kept in the child header so either include order works).
+namespace s3::physics::drive_frames {
+using authored::authored_body_pose_records;
+using authored::authored_body_transforms;
+using authored::AuthoredTransformInputs;
+}  // namespace s3::physics::drive_frames

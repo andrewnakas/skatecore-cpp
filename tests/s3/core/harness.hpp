@@ -127,14 +127,14 @@ template <class A, class B>
     } while (0)
 #define CHECK_EQ(a, b)                                                                     \
     do {                                                                                   \
-        const auto& s3_a_ = (a);                                                           \
-        const auto& s3_b_ = (b);                                                           \
+        const auto s3_a_ = (a);                                                           \
+        const auto s3_b_ = (b);                                                           \
         if (!(s3_a_ == s3_b_)) ::s3test::fail_eq(__FILE__, __LINE__, #a, #b, s3_a_, s3_b_, "=="); \
     } while (0)
 #define CHECK_NE(a, b)                                                                     \
     do {                                                                                   \
-        const auto& s3_a_ = (a);                                                           \
-        const auto& s3_b_ = (b);                                                           \
+        const auto s3_a_ = (a);                                                           \
+        const auto s3_b_ = (b);                                                           \
         if (s3_a_ == s3_b_) ::s3test::fail_eq(__FILE__, __LINE__, #a, #b, s3_a_, s3_b_, "!="); \
     } while (0)
 #define CHECK_BITS_EQ(a, b)                                                                     \

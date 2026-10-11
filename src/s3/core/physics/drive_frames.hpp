@@ -86,10 +86,6 @@ inline constexpr RetailTruckTransformInputs RETAIL_DEFAULT_TRUCK_TRANSFORM_INPUT
 
 namespace s3::physics::drive_frames {
 
-using authored::authored_body_pose_records;
-using authored::authored_body_transforms;
-using authored::AuthoredTransformInputs;
-
 /// TU3 `SkateboardBody::CalculateTruckTransforms` (`0x82C0BC90`) evaluated
 /// from the stock skater-collection inputs.
 ///

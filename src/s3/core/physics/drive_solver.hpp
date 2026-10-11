@@ -112,7 +112,3 @@ Vector3 cross(Vector3 a, Vector3 b);
 }  // namespace s3::physics::drive_solver
 
 #include "s3/core/physics/drive_solver/builder.hpp"
-
-namespace s3::physics::drive_solver {
-using builder::build_drive_rows;
-}  // namespace s3::physics::drive_solver

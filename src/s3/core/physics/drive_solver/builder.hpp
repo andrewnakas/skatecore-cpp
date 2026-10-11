@@ -17,3 +17,8 @@ RetailDriveRows build_drive_rows(RetailDriveBodyState frame_a_body, RetailDriveB
                                  float time_step);
 
 }  // namespace s3::physics::drive_solver::builder
+
+// `pub use builder::build_drive_rows`.
+namespace s3::physics::drive_solver {
+using builder::build_drive_rows;
+}  // namespace s3::physics::drive_solver

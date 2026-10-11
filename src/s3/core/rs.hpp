@@ -62,16 +62,12 @@ inline constexpr float TAU = 6.28318530717958647692528676655900577f;
 }  // namespace f32
 
 // ---- bits ---------------------------------------------------------------------------
-inline float from_bits(std::uint32_t bits) {
-    float f;
-    std::memcpy(&f, &bits, sizeof f);
-    return f;
-}
-inline std::uint32_t to_bits(float f) {
-    std::uint32_t bits;
-    std::memcpy(&bits, &f, sizeof bits);
-    return bits;
-}
+// constexpr via __builtin_bit_cast (clang, gcc >= 11); same result as memcpy.
+constexpr float from_bits(std::uint32_t bits) { return __builtin_bit_cast(float, bits); }
+constexpr std::uint32_t to_bits(float f) { return __builtin_bit_cast(std::uint32_t, f); }
+/// `f64::from_bits` / `f64::to_bits`.
+constexpr double f64_from_bits(std::uint64_t bits) { return __builtin_bit_cast(double, bits); }
+constexpr std::uint64_t f64_to_bits(double d) { return __builtin_bit_cast(std::uint64_t, d); }
 /// `f32::to_be_bytes`.
 inline std::array<std::uint8_t, 4> to_be_bytes(float f) {
     std::uint32_t b = to_bits(f);
