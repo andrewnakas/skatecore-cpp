@@ -1,9 +1,5 @@
 // Port of skate-core/src/animation/foot_ik/drive.rs.
 // SkeletonIK::UpdateDriveFrames82BF0198 and its solve/mapping chain.
-//
-// PARTIAL PORT (stage C): only items used by physics (Geometry: new_, validate_limbs).
-// update/solve_drives need foot_ik::{status,two_bone} and skeleton_root::orthonormalize and are
-// left to the animation stage.
 #pragma once
 #include <array>
 #include <cstddef>
@@ -11,12 +7,16 @@
 #include <string>
 
 #include "s3/core/animation/foot_ik/math.hpp"
+#include "s3/core/animation/foot_ik/status.hpp"
 #include "s3/core/animation/foot_ik/transforms.hpp"
+#include "s3/core/animation/foot_ik/two_bone.hpp"
 
 namespace s3::animation::foot_ik::drive {
 
 using Transform = physics::skeleton_animation_record::AnimationPartTransform;
 using transforms::LimbBinding;
+using transforms::LimbFrames;
+using math::Vector;
 
 struct Geometry {
     /// SkeletonData4704: nearest ancestor represented by a physical part.
@@ -65,5 +65,17 @@ struct Geometry {
         return rs::Unit{};
     }
 };
+
+std::array<bool, 4> update(const std::array<status::LimbStatus, 4>& statuses, std::array<LimbFrames, 4>& frames,
+                           const std::array<LimbBinding, 4>& bindings, const Geometry& geometry,
+                           const std::array<Transform, 24>& original_animation, std::array<Transform, 24>& drives,
+                           const Transform& world_to_animation, two_bone::AngleLimits limits);
+
+///82BF1F20, two82BF1D28 frames and target * rigidInverse(original). (pub(super))
+std::optional<Transform> line_mapping(Vector start, Vector end, Vector normal, Vector new_start, Vector new_end,
+                                      Vector new_normal);
+
+/// (pub(super))
+Vector normalize_safe(Vector value);
 
 }  // namespace s3::animation::foot_ik::drive

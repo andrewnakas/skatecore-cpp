@@ -15,7 +15,8 @@ using output::attributes::AttributeName;
 /// Encode up to30 bytes, stopping at NUL. Native accepts signed bytes and does
 /// not validate its alphabet. Preserve its case folding, punctuation behavior,
 /// wrapping word arithmetic and truncation; do not substitute UTF-8 casefold.
-constexpr AttributeName encode(const std::uint8_t* text, std::size_t len) {
+template <class Byte>
+constexpr AttributeName encode_bytes(const Byte* text, std::size_t len) {
     AttributeName out{};
     std::size_t position = 0;
     while (position < 30 && position < len && text[position] != 0) {
@@ -42,9 +43,10 @@ constexpr AttributeName encode(const std::uint8_t* text, std::size_t len) {
     }
     return out;
 }
-/// Convenience overload for byte-string literals (`b"..."` in Rust).
-inline AttributeName encode(std::string_view text) {
-    return encode(reinterpret_cast<const std::uint8_t*>(text.data()), text.size());
+constexpr AttributeName encode(const std::uint8_t* text, std::size_t len) {
+    return encode_bytes(text, len);
 }
+/// Convenience overload for byte-string literals (`b"..."` in Rust); usable in constexpr.
+constexpr AttributeName encode(std::string_view text) { return encode_bytes(text.data(), text.size()); }
 
 }  // namespace s3::animation::skeleton_input::name

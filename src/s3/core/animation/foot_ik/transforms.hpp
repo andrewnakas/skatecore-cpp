@@ -1,12 +1,12 @@
 // Port of skate-core/src/animation/foot_ik/transforms.rs.
 // Animated portion of CalculateInitialPartTransforms82BEDF08.
-//
-// PARTIAL PORT (stage C): only items used by physics (LimbBinding, LimbFrames, inverse_rigid).
-// prepare_animation_target needs foot_ik::status and is left to the animation stage.
 #pragma once
 #include <cstddef>
 #include <optional>
 
+#include <array>
+
+#include "s3/core/animation/foot_ik/status.hpp"
 #include "s3/core/physics/skeleton_animation_record.hpp"
 
 namespace s3::animation::foot_ik::transforms {
@@ -42,6 +42,13 @@ struct LimbFrames {
 
     static LimbFrames default_() { return LimbFrames{}; }
 };
+
+/// Prepare the animated frames after this limb's CalculateExternalIKOffset
+/// stage. External/local modes retain their separately calculated frames.
+/// The full controller calls both stages in native limb order.
+void prepare_animation_target(status::LimbStatus& status, LimbFrames& frames, LimbBinding binding,
+                              const std::array<Transform, 24>& animation, const Transform& animation_to_world,
+                              const Transform& inverse_animation_board, std::array<float, 4> contact_bounds);
 
 /// 82BEDF5C..DFEC and E1B4..E260: rigid inverse, transpose XYZ and zero W;
 /// translation uses negative position with Z multiply, Y FMA, then X FMA.
