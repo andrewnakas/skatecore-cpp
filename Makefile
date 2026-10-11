@@ -15,3 +15,10 @@ clean:
 	rm -rf build
 
 .PHONY: test clean
+
+# Full-runtime port (src/s3): each stage adds its own fragment in mk/<stage>.mk with an
+# `s3-<stage>-test` target; `make s3-test` runs them all.
+S3_TESTS :=
+-include mk/*.mk
+s3-test: $(S3_TESTS)
+.PHONY: s3-test
