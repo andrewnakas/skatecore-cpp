@@ -18,9 +18,17 @@ Live: https://andrewnakas.github.io/skatecore-cpp/ (currently the "lite" engine)
   VBR, metadata, frames, state graphs, .pat, input config, manifest, .skate maps (zlib/zstd). 59 tests; dumps of all
   3324 clips, poses, KenneyPark/MegaPark/StartPark/BlackBoxPark identical to Rust.
 
+- **Stage P1 done.** input/riding/air/scoring (flick-it gestures, intentions, grounded riding, pumping, ground jump,
+  known air, trajectories, scoring): 94 tests.
+- **Stage P2 done.** player/** (state machine, selector, input phase, wipeout/slide states, offboard, respawn): 265 tests.
+- **Stage K done.** skate-core camera + game CameraRuntime (stock shots from the pack): 10 tests.
+- **Stage A done.** animation + graph + game graph runtime/hosts/skater animation; stock ActionGraph (234 states) and
+  MotionGraph (2088 states) compile and run on real data: 171 tests. Bit-exact glam (NEON order) port.
+- Ported tests total: 209 core + 59 data + 94 p1 + 265 p2 + 171 anim + 10 cam = 808, all passing.
+
 ## In progress
-- Stage A (animation + state graphs), Stage P1 (input/riding/air/scoring), Stage P2 (player/**).
-- Next: Stage P3 (skate-game physics/* frame advance), Stage K (camera), trace harness, Stage W (web demo).
+- Stage P3: skate-game simulation (GamePhysics, frame::advance, grinds, wipeouts, input) + `s3trace` parity vs simref.
+- Stage W1: web demo loading the cleanroom pack + map + skater.glb (under /s3/).
 
 ## Trace parity
 (none yet)
