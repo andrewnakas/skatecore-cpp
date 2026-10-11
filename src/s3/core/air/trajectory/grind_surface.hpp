@@ -2,9 +2,6 @@
 // Static geometry investigation from original S3 TU3 82C20728/82C20C08.
 // Query execution is supplied by the world owner; a miss is not missing data.
 // No moving-object observations or authored material codes are synthesized.
-//
-// NOTE (stage C): only this submodule of air::trajectory (plus its math.rs) has been
-// ported so far, because physics::grind_contact / grind_air depend on it.
 #pragma once
 #include <array>
 #include <cstdint>

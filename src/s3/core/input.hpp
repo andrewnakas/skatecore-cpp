@@ -1,0 +1,27 @@
+// Port of skate-core/src/input/mod.rs.
+// Native input publication. Controller/graph producers remain separate stages.
+#pragma once
+#include "s3/core/input/angle.hpp"
+#include "s3/core/input/animation_packet.hpp"
+#include "s3/core/input/anticipation_intentions.hpp"
+#include "s3/core/input/body_flip_signal.hpp"
+#include "s3/core/input/controller.hpp"
+#include "s3/core/input/gameplay_map.hpp"
+#include "s3/core/input/gesture.hpp"
+#include "s3/core/input/graph_intents.hpp"
+#include "s3/core/input/grind_intentions.hpp"
+#include "s3/core/input/history.hpp"
+#include "s3/core/input/manual_intentions.hpp"
+#include "s3/core/input/pad.hpp"
+#include "s3/core/input/power_sliding.hpp"
+#include "s3/core/input/riding_intentions.hpp"
+#include "s3/core/input/set_turning.hpp"
+#include "s3/core/input/steering_intentions.hpp"
+#include "s3/core/input/tick.hpp"
+#include "s3/core/input/trick_intentions.hpp"
+#include "s3/core/input/turn_conditioner.hpp"
+#include "s3/core/input/turn_remap.hpp"
+#include "s3/core/input/xbox.hpp"
+
+#include "s3/core/input/offboard_intentions.hpp"
+#include "s3/core/input/wipeout_intentions.hpp"
