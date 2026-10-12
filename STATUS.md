@@ -1,6 +1,6 @@
 # STATUS (skatecore full runtime port)
 
-Live: https://andrewnakas.github.io/skatecore-cpp/ (currently the "lite" engine)
+Live: https://andrewnakas.github.io/skatecore-cpp/ (full C++ Skate 3 runtime; lite engine at /lite/)
 
 ## Done (2026-10-11)
 - Lite engine + web demo live. User approved using the cleanroom pack data (loaded at run time, never committed).
@@ -46,3 +46,20 @@ idle/push/ollie/kickflip/carve (KenneyPark), test-world, normal/hardcore difficu
 
 ## Questions
 (none)
+
+## Done: full runtime live (2026-10-11)
+- W2: the web demo runs the C++ runtime (driver::Sim) in WebAssembly: skinned regenerated skater from the sim
+  pose, game CameraRuntime, cleanroom controls, clean-audio, HUD, 9-map picker. Pack + maps are fetched at run time
+  from the skate3-cleanroom site (never committed). Verified on the live site (docs/shots/live-keys.png:
+  BlackBoxPark, push to 30 km/h, Ollie scored). 1001 ported tests pass; traces bit-identical to the Rust reference.
+
+## Known issues
+- StartPark: the skater falls through the floor (the Rust snapshot we ported does the same, tick for tick); the page
+  opens on BlackBoxPark instead.
+- Rendering is three.js with PBR approximations: retail sky (SKYB) and retail shaders are not reproduced.
+- No multiplayer, no Freestyle MX bike mod.
+- First load downloads the 95 MB core.pack (~60 s on a typical connection), then the map.
+
+## For the user
+Open https://andrewnakas.github.io/skatecore-cpp/ , wait for the pack to load, Space to push, arrows to flick
+(down then up = ollie), WASD to steer/crouch. Try MegaPark from the map menu. A gamepad works (press a button first).
