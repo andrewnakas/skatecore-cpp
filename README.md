@@ -112,4 +112,4 @@ Gamepad and touch work too.
 
 Skate 3 © Electronic Arts; this is a fan project and ships no Skate 3 assets or data files.
 skate-core: SK8-ENGINE / skate-3-rust-engine contributors. Port, controller and demo: andrewnakas.
-License: undecided (upstream skate-3-rust-engine has no license file; its README mentions GPL-3.0).
+License: GPL-3.0 (see `LICENSE`), the same as the upstream [skate-3-rust-engine](https://github.com/SK8-ENGINE/skate-3-rust-engine) this is ported from.
